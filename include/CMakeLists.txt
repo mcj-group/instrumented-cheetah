@@ -1,6 +1,7 @@
 set(cilk_header_files
   cilk/cilk.h
   cilk/cilk_api.h
+  cilk/sched_stats.h
   cilk/cilk_stub.h
   cilk/holder.h
   cilk/opadd_reducer.h

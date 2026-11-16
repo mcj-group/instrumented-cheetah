@@ -100,6 +100,7 @@ void set_nworkers(global_state *g, unsigned int nworkers) {
     CILK_ASSERT(nworkers <= g->options.nproc);
     CILK_ASSERT(nworkers > 0);
     g->nworkers = nworkers;
+    WHEN_SCHED_STATS(cilk_snapshot_pool_resize(g, nworkers));
 }
 
 // Set global RTS options from environment variables.
@@ -185,7 +186,7 @@ global_state *global_state_init(int argc, char *argv[]) {
     g->worker_to_index = (worker_id *)calloc(active_size, sizeof(worker_id));
     cilk_internal_malloc_global_init(g); // initialize internal malloc first
     cilk_fiber_pool_global_init(g);
-    cilk_global_sched_stats_init(&(g->stats));
+    WHEN_SCHED_STATS(cilk_snapshot_pool_init(g));
 
     return g;
 }

@@ -113,7 +113,9 @@ struct global_state {
     // check in Closure_steal always fails.
     struct __cilkrts_worker dummy_worker;
 
-    struct global_sched_stats stats;
+#if SCHED_STATS
+    struct cilk_snapshot_pool *stats;
+#endif
 };
 
 CHEETAH_INTERNAL extern global_state *default_cilkrts;

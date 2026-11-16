@@ -18,7 +18,6 @@ struct local_state {
     jmpbuf rts_ctx;
     struct cilk_fiber_pool fiber_pool;
     struct cilk_im_desc im_desc;
-    struct sched_stats stats;
 };
 
 #endif /* _CILK_LOCAL_H */

@@ -300,7 +300,7 @@ maybe_reengage_workers(global_state *const rts, worker_id self,
             *efficient_history = 0;
             *inefficient_history = 0;
         }
-        WHEN_SCHED_STATS(w->l->stats.reeng_rqsts += request);
+        CILK_ADD_STATS(w, SNAPSHOT_REENGAGEMENT_REQUESTS, request);
 
         // Make sure at least 1 worker is requested if we're about to run
         // out of sentinels.
@@ -310,7 +310,7 @@ maybe_reengage_workers(global_state *const rts, worker_id self,
                 &rts->disengaged_thieves_futex, memory_order_relaxed);
             if (current_request < ((counts.active + 3) / 4)) {
                 request = ((counts.active + 3) / 4) - current_request;
-                WHEN_SCHED_STATS(w->l->stats.onesen_rqsts += request);
+                CILK_ADD_STATS(w, SNAPSHOT_ONE_SENTINEL_REQUESTS, request);
             }
         }
 

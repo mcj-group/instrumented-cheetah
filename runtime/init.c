@@ -49,7 +49,6 @@ static local_state *worker_local_init(local_state *l, global_state *g) {
     l->returning = false;
     l->rand_next = 0; /* will be reset in scheduler loop */
     l->wake_val = 0;
-    cilk_sched_stats_init(&(l->stats));
 
     return l;
 }
@@ -649,7 +648,6 @@ void __cilkrts_internal_exit_cilkified_root(global_state *g,
 static void global_state_terminate(global_state *g) {
     cilk_fiber_pool_global_terminate(g); /* before malloc terminate */
     cilk_internal_malloc_global_terminate(g);
-    cilk_sched_stats_print(g);
 }
 
 static void global_state_deinit(global_state *g) {
@@ -767,15 +765,16 @@ CHEETAH_INTERNAL void __cilkrts_shutdown(global_state *g) {
     // Cleanup the global state
     workers_terminate(g);
     flush_alert_log();
-    /* This needs to be before global_state_terminate for good stats. */
+    /* Finish fiber-pool cleanup before collecting allocation statistics. */
     for_each_worker(g, wrap_fiber_pool_destroy, NULL);
-    // global_state_terminate collects and prints out stats, and thus
+    // global_state_terminate collects allocation statistics, and thus
     // should occur *BEFORE* worker_deinit, because worker_deinit
     // deinitializes worker-related data structures which may
     // include stats that we care about.
     // Note: the fiber pools uses the internal-malloc, and fibers in fiber
     // pools are not freed until workers_deinit.  Thus the stats included on
     // internal-malloc that does not include all the free fibers.
+    WHEN_SCHED_STATS(cilk_snapshot_pool_stop(g));
     global_state_terminate(g);
     workers_deinit(g);
     deques_deinit(g);
@@ -785,4 +784,5 @@ CHEETAH_INTERNAL void __cilkrts_shutdown(global_state *g) {
 // Global destructor for shutting down the default cilkrts
 __attribute__((destructor)) void __default_cilkrts_shutdown() {
     __cilkrts_shutdown(default_cilkrts);
+    WHEN_SCHED_STATS(cilk_snapshot_write_exit());
 }

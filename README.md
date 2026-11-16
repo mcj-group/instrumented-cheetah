@@ -1,3 +1,42 @@
+# Flexible, Snapshot-based Instrumentation for Cheetah
+
+With `CILK_STATS=1`, `<cilk/sched_stats.h>` (also included by `cilk_api.h`) provides C-compatible APIs usable from C++, C, and Rust FFI:
+
+```c
+// Captures accumulated durations and counters across all workers in all pools into a newly allocated object, returned through `*out`.
+// Reset the durations and counters but keep the current state of each worker.
+// Returns 0 on success
+int __cilkrts_sched_stats_snapshot_and_reset(__cilkrts_sched_stats_snapshot **out);
+
+// Copies the supplied snapshots and ID into a buffer for JSON output at program exit
+// Return 0 on success
+int __cilkrts_sched_stats_record_snapshots(const __cilkrts_sched_stats_snapshot *snapshots, const char *id);
+
+// Deallocated the snapshot object. 
+// If the object has been recored via __cilkrts_sched_stats_record_snapshots, the recorded copy stays intact.
+void __cilkrts_sched_stats_free_snapshot(__cilkrts_sched_stats_snapshot *snapshots);
+```
+
+For each measured region, use this sequence (check each returned error code):
+
+```c
+__cilkrts_sched_stats_snapshot *s;
+
+warmup(); /* untimed */
+__cilkrts_sched_stats_snapshot_and_reset(&s);
+__cilkrts_sched_stats_free_snapshot(s); /* discard setup and warmup */
+
+compute(); /* returns to serial main after completing all parallel work */
+
+__cilkrts_sched_stats_snapshot_and_reset(&s);
+__cilkrts_sched_stats_record_snapshots(s, "hist/iteration/1");
+__cilkrts_sched_stats_free_snapshot(s);
+
+cleanup(); /* untimed; excluded from the recorded computation snapshot */
+```
+
+Below are the original README of the Cheetah runtime.
+
 # The OpenCilk runtime system
 
 This repository contains the source code of the OpenCilk runtime system.  This library is intended to be used with the [OpenCilk compiler](https://github.com/OpenCilk/opencilk-project) and can either be built [together with the compiler](https://www.opencilk.org/doc/users-guide/build-opencilk-from-source/) or as a standalone library.

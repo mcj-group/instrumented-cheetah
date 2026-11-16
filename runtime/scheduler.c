@@ -1375,7 +1375,7 @@ static void do_what_it_says(ReadyDeque *deques, __cilkrts_worker *w,
             break;
         }
         if (t) {
-            WHEN_SCHED_STATS(l->stats.repos++);
+            CILK_ADD_STATS(w, SNAPSHOT_REPOSSESSIONS, 1);
         }
     } while (t);
 }
@@ -1508,8 +1508,7 @@ void worker_scheduler(__cilkrts_worker *w, history_t *const history) {
         CILK_STOP_TIMING(w, INTERVAL_SCHED);
 
         while (!t && !atomic_load_explicit(&rts->done, memory_order_acquire)) {
-            CILK_START_TIMING(w, INTERVAL_SCHED);
-            CILK_START_TIMING(w, INTERVAL_IDLE);
+            CILK_START_SEARCH(w);
 #if ENABLE_THIEF_SLEEP
             // Get the set of workers we can steal from and a local copy of the
             // index-to-worker map.  We'll attempt a few steals using these
@@ -1563,16 +1562,10 @@ void worker_scheduler(__cilkrts_worker *w, history_t *const history) {
                 }
             } while (!t && --attempt > 0);
 
-#if SCHED_STATS
-            if (t) { // steal successful
-                WHEN_SCHED_STATS(w->l->stats.steals++);
-                CILK_STOP_TIMING(w, INTERVAL_SCHED);
-                CILK_DROP_TIMING(w, INTERVAL_IDLE);
-            } else { // steal unsuccessful
-                CILK_STOP_TIMING(w, INTERVAL_IDLE);
-                CILK_DROP_TIMING(w, INTERVAL_SCHED);
+            if (t) {
+                CILK_ADD_STATS(w, SNAPSHOT_STEALS, 1);
             }
-#endif
+            CILK_FINISH_SEARCH(w, t != NULL);
 
             fails = go_to_sleep_maybe(
                 rts, self, nworkers, NAP_THRESHOLD, w, t, fails,

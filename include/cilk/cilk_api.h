@@ -2,6 +2,7 @@
 #define _CILK_API_H
 
 #include <stddef.h> /* size_t */
+#include <cilk/sched_stats.h>
 
 #ifdef __cplusplus
 #define __CILKRTS_NOTHROW noexcept
